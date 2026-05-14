@@ -1,0 +1,59 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://127.0.0.1:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+              - PATCH
+            allowedHeaders:
+              - "*"
+            allowCredentials: true
+            maxAge: 3600
+        add-to-simple-url-handler-mapping: true
+
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+
+      routes:
+        # ✅ Toutes les routes Django en une seule règle
+        - id: authentication-sounatrach
+          uri: http://localhost:8010
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+
+        - id: service-juridique
+          uri: lb://service-juridique
+          predicates:
+            - Path=/juridique/**
+          filters:
+            - StripPrefix=0
+        - id: affectation-sounatrach
+          uri: http://localhost:8011
+          predicates:
+            - Path=/affectation/**
+          filters:
+            - StripPrefix=0
+
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    fetch-registry: true
+    register-with-eureka: true
