@@ -31,5 +31,7 @@ urlpatterns = [
     path('users/<int:user_id>/update-role/', views.api_update_user_role, name='api_update_user_role'),
     path('users/<int:user_id>/delete/', views.api_delete_user, name='api_delete_user'), 
     path('users/<int:user_id>/update-departement/', views.api_update_user_departement, name='api_update_user_departement'), 
+    path('users/me/', views.api_get_own_profile, name='get-own-profile'),
+    path('users/me/update/', views.api_update_own_profile, name='update-own-profile'),
 
 ]
