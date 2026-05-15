@@ -32,4 +32,57 @@ urlpatterns = [
     path('users/responsables-departement/affectes/', views.api_list_responsables_departement_affectes, name='list-responsables-departement-affectes'),
     path('users/responsables-departement/all/', views.api_list_all_responsables_departement, name='list-all-responsables-departement'),
     
-]
+
+    # Direction Centrale
+    path('assign-direction-centrale/', views.assign_direction_centrale_to_user, name='assign-direction-centrale'),
+    path('reassign-direction-centrale/', views.reassign_direction_centrale_to_user, name='reassign-direction-centrale'),
+    path('users/<int:user_id>/remove-direction-centrale/', views.remove_direction_centrale_from_user, name='remove-direction-centrale'),
+    path('users/directeurs-centrale/', views.api_list_directeurs_centrale, name='list-directeurs-centrale'),
+    path('users/directeurs-centrale/affectes/', views.api_list_directeurs_centrale_affectes, name='list-directeurs-centrale-affectes'),
+    path('users/directeurs-centrale/all/', views.api_list_all_directeurs_centrale, name='list-all-directeurs-centrale'),
+
+    # =========================================================
+    # DIRECTION ACTIVITE
+    # =========================================================
+
+    path('assign-direction-activite/',views.assign_direction_activite_to_user,name='assign_direction_activite'),
+
+    path('reassign-direction-activite/',views.reassign_direction_activite_to_user,name='reassign_direction_activite'),
+
+    path('users/<int:user_id>/remove-direction-activite/',views.remove_direction_activite_from_user,name='remove_direction_activite'),
+
+    path('users/directeurs-direction-activite/',views.api_list_directeurs_direction_activite,name='list-directeurs-direction-activite'),
+
+    path('users/directeurs-direction-activite/affectes/',views.api_list_directeurs_direction_activite_affectes,name='list-directeurs-direction-activite-affectes'),
+
+    path('users/directeurs-direction-activite/all/',views.api_list_all_directeurs_direction_activite,name='list-all-directeurs-direction-activite'),
+
+
+    # =========================================================
+    # DIVISION ACTIVITE
+    # =========================================================
+
+    path('assign-division-activite/',views.assign_division_activite_to_user,name='assign_division_activite'),
+
+    path('reassign-division-activite/',views.reassign_division_activite_to_user,name='reassign_division_activite'),
+    path('users/<int:user_id>/remove-division-activite/',views.remove_division_activite_from_user,name='remove_division_activite'),
+    path('users/directeurs-division-activite/',views.api_list_directeurs_division_activite,name='list-directeurs-division-activite'),
+    path('users/directeurs-division-activite/affectes/',views.api_list_directeurs_division_activite_affectes,name='list-directeurs-division-activite-affectes'),
+    path('users/directeurs-division-activite/all/',views.api_list_all_directeurs_division_activite,name='list-all-directeurs-division-activite'),
+
+    # ── STRUCTURE DIRECTION (responsable_direction_division) ──
+    path('assign-structure-direction/',   views.assign_structure_direction_to_user,   name='assign-structure-direction'),
+    path('reassign-structure-direction/', views.reassign_structure_direction_to_user, name='reassign-structure-direction'),
+    path('users/<int:user_id>/remove-structure-direction/', views.remove_structure_direction_from_user, name='remove-structure-direction'),
+    path('users/responsables-direction-division/',          views.api_list_responsables_direction_division,          name='list-responsables-direction-division'),
+    path('users/responsables-direction-division/affectes/', views.api_list_responsables_direction_division_affectes, name='list-responsables-direction-division-affectes'),
+    path('users/responsables-direction-division/all/',      views.api_list_all_responsables_direction_division,      name='list-all-responsables-direction-division'),
+
+    # ── STRUCTURE DEPARTEMENT (responsable_departement_division) ──
+    path('assign-structure-departement/',   views.assign_structure_departement_to_user,   name='assign-structure-departement'),
+    path('reassign-structure-departement/', views.reassign_structure_departement_to_user, name='reassign-structure-departement'),
+    path('users/<int:user_id>/remove-structure-departement/', views.remove_structure_departement_from_user, name='remove-structure-departement'),
+    path('users/responsables-departement-division/',          views.api_list_responsables_departement_division,          name='list-responsables-departement-division'),
+    path('users/responsables-departement-division/affectes/', views.api_list_responsables_departement_division_affectes, name='list-responsables-departement-division-affectes'),
+    path('users/responsables-departement-division/all/',      views.api_list_all_responsables_departement_division,      name='list-all-responsables-departement-division'),
+    ]

@@ -1,3 +1,8 @@
 venv/
 */venv/
 authentication/venv/
+venv2/
+*/venv/
+# Python cache
+__pycache__/
+*.pyc

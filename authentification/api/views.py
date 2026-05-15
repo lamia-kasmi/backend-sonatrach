@@ -17,7 +17,8 @@ from datetime import datetime
 
 from .models import User
 
-
+# views.py
+from .serializers import UserSerializer, UserLoginResponseSerializer
 # ==========================
 # UTILS
 # ==========================
@@ -28,6 +29,202 @@ def nom_complet(obj):
 # ==========================
 # LOGIN API (JWT)
 # ==========================
+
+# @api_view(['POST'])
+# def api_login(request):
+#     data = request.data
+#     email = data.get('email')
+#     password = data.get('password')
+
+#     try:
+#         user = User.objects.get(email=email)
+#     except User.DoesNotExist:
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     if not user.check_password(password):
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     refresh = RefreshToken.for_user(user)
+#     #code ajouter
+    
+#     refresh['activite_id']    = str(user.activite_id)    if user.activite_id    else None
+#     refresh['direction_id']   = str(user.direction_id)   if user.direction_id else None   # ✅ NEW
+#     refresh['role']         = user.role
+#     refresh['user_id']      = str(user.id)
+
+
+#     return Response({
+#         "status": "success",
+#         "role": getattr(user, 'role', None),
+#         "refresh": str(refresh),
+#         "access": str(refresh.access_token),
+#         "user_id":str(user.id),
+#         "message": f"Logged in as {nom_complet(user)}",
+#         "nom_complet": nom_complet(user),
+#         "photo_profil": user.photo_profil.url if user.photo_profil else None,   # ✅
+#         "activite_id":    str(user.activite_id)    if user.activite_id    else None,   # ✅
+#         "direction_id":   str(user.direction_id)   if user.direction_id else None,   # ✅ NEW
+#         "departement_id": str(user.departement_id) if user.departement_id else None   # ✅ NEW
+
+#     })
+# @api_view(['POST'])
+# def api_login(request):
+#     data = request.data
+#     email = data.get('email')
+#     password = data.get('password')
+
+#     try:
+#         user = User.objects.get(email=email)
+#     except User.DoesNotExist:
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     if not user.check_password(password):
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     refresh = RefreshToken.for_user(user)
+    
+#     # ✅ Ajouter tous les champs dans le refresh token
+#     refresh['user_id'] = str(user.id)
+#     refresh['role'] = user.role
+#     refresh['activite_id'] = str(user.activite_id) if user.activite_id else None
+#     refresh['direction_id'] = str(user.direction_id) if user.direction_id else None
+#     refresh['departement_id'] = str(user.departement_id) if user.departement_id else None
+#     refresh['direction_centrale_id'] = str(user.direction_centrale_id) if user.direction_centrale_id else None
+#     refresh['structure_id'] = str(user.structure_id) if user.structure_id else None
+
+#     # refresh['direction_division_id'] = str(user.direction_division_id) if user.direction_division_id else None
+#     # refresh['departement_division_id'] = str(user.departement_division_id) if user.departement_division_id else None
+#     refresh['direction_activite_id'] = str(user.direction_activite_id) if user.direction_activite_id else None
+#     refresh['division_activite_id'] = str(user.division_activite_id) if user.division_activite_id else None
+
+#     # ✅ Les mêmes champs seront automatiquement dans l'access token
+#     # car refresh.access_token copie les claims du refresh
+
+#     return Response({
+#         "status": "success",
+#         "role": user.role,
+#         "refresh": str(refresh),
+#         "access": str(refresh.access_token),
+#         "user_id": str(user.id),
+#         "message": f"Logged in as {nom_complet(user)}",
+#         "nom_complet": nom_complet(user),
+#         "photo_profil": user.photo_profil.url if user.photo_profil else None,
+#         "activite_id": str(user.activite_id) if user.activite_id else None,
+#         "direction_id": str(user.direction_id) if user.direction_id else None,
+#         "departement_id": str(user.departement_id) if user.departement_id else None,
+#         "direction_centrale_id": str(user.direction_centrale_id) if user.direction_centrale_id else None,
+#         "structure_id": str(user.structure_id) if user.structure_id else None,
+
+#         # "direction_division_id": str(user.direction_division_id) if user.direction_division_id else None,
+#         # "departement_division_id": str(user.departement_division_id) if user.departement_division_id else None,
+#         "direction_activite_id": str(user.direction_activite_id) if user.direction_activite_id else None,
+#         "division_activite_id": str(user.division_activite_id) if user.division_activite_id else None,
+#     })
+
+# @api_view(['POST'])
+# def api_login(request):
+#     data = request.data
+#     email = data.get('email')
+#     password = data.get('password')
+
+#     try:
+#         user = User.objects.get(email=email)
+#     except User.DoesNotExist:
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     if not user.check_password(password):
+#         return Response(
+#             {"status": "error", "message": "Email ou mot de passe incorrect."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     # Vérifier si le compte est actif
+#     if not user.is_active:
+#         return Response(
+#             {"status": "error", "message": "Compte désactivé. Contactez l'administrateur."},
+#             status=status.HTTP_401_UNAUTHORIZED
+#         )
+
+#     # Utiliser le serializer pour les données utilisateur
+#     user_serializer = UserSerializer(user, context={'request': request})
+#     user_data = user_serializer.data
+
+#     refresh = RefreshToken.for_user(user)
+    
+#     # Ajouter les claims dans le token
+#     refresh['user_id'] = str(user.id)
+#     refresh['email'] = user.email
+#     refresh['role'] = user.role or ''
+#     refresh['nom'] = user.nom
+#     refresh['prenom'] = user.prenom
+#     refresh['activite_id'] = str(user.activite_id) if user.activite_id else ''
+#     refresh['direction_id'] = str(user.direction_id) if user.direction_id else ''
+#     refresh['departement_id'] = str(user.departement_id) if user.departement_id else ''
+#     refresh['direction_centrale_id'] = str(user.direction_centrale_id) if user.direction_centrale_id else ''
+#     refresh['structure_id'] = str(user.structure_id) if user.structure_id else ''
+#     refresh['direction_activite_id'] = str(user.direction_activite_id) if user.direction_activite_id else ''
+#     refresh['division_activite_id'] = str(user.division_activite_id) if user.division_activite_id else ''
+
+#     # Construire la réponse
+#     response_data = {
+#         "status": "success",
+#         "message": f"Logged in as {user.prenom} {user.nom}",
+#         "refresh": str(refresh),
+#         "access": str(refresh.access_token),
+#         "user_id": str(user.id),
+#         "role": user.role,
+#         "nom_complet": f"{user.prenom} {user.nom}".strip(),
+#         "photo_profil": user.photo_profil.url if user.photo_profil else None,
+        
+#         # IDs
+#         "activite_id": str(user.activite_id) if user.activite_id else None,
+#         "direction_id": str(user.direction_id) if user.direction_id else None,
+#         "departement_id": str(user.departement_id) if user.departement_id else None,
+#         "direction_centrale_id": str(user.direction_centrale_id) if user.direction_centrale_id else None,
+#         "structure_id": str(user.structure_id) if user.structure_id else None,
+#         "direction_activite_id": str(user.direction_activite_id) if user.direction_activite_id else None,
+#         "division_activite_id": str(user.division_activite_id) if user.division_activite_id else None,
+        
+#         # Données enrichies (via le serializer)
+#         "activite_detail": user_data.get("activite_detail"),
+#         "direction_detail": user_data.get("direction_detail"),
+#         "departement_detail": user_data.get("departement_detail"),
+#         "direction_centrale_detail": user_data.get("direction_centrale_detail"),
+#         "direction_activite_detail": user_data.get("direction_activite_detail"),
+#         "division_activite_detail": user_data.get("division_activite_detail"),
+#         "structure_detail": user_data.get("structure_detail"),
+#     }
+    
+#     # Valider la réponse avec le serializer (optionnel mais recommandé)
+#     response_serializer = UserLoginResponseSerializer(data=response_data)
+#     if response_serializer.is_valid():
+#         return Response(response_serializer.data)
+#     else:
+#         # En cas d'erreur de validation, retourner quand même les données
+#         print(f"[LOGIN] Validation error: {response_serializer.errors}")
+#         return Response(response_data)
+# views.py
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken
+from .models import User
+from .serializers import UserSerializer, UserLoginResponseSerializer
 
 @api_view(['POST'])
 def api_login(request):
@@ -49,31 +246,83 @@ def api_login(request):
             status=status.HTTP_401_UNAUTHORIZED
         )
 
+    # Vérifier si le compte est actif
+    if not user.is_active:
+        return Response(
+            {"status": "error", "message": "Compte désactivé. Contactez l'administrateur."},
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+    # Créer les tokens
     refresh = RefreshToken.for_user(user)
-    #code ajouter
+    access_token = str(refresh.access_token)
     
-    refresh['activite_id']    = str(user.activite_id)    if user.activite_id    else None
-    refresh['direction_id']   = str(user.direction_id)   if user.direction_id else None   # ✅ NEW
-    refresh['role']         = user.role
-    refresh['user_id']      = str(user.id)
+    # Ajouter les claims dans le refresh token
+    refresh['user_id'] = str(user.id)
+    refresh['email'] = user.email
+    refresh['role'] = user.role or ''
+    refresh['nom'] = user.nom
+    refresh['prenom'] = user.prenom
+    refresh['activite_id'] = str(user.activite_id) if user.activite_id else ''
+    refresh['direction_id'] = str(user.direction_id) if user.direction_id else ''
+    refresh['departement_id'] = str(user.departement_id) if user.departement_id else ''
+    refresh['direction_centrale_id'] = str(user.direction_centrale_id) if user.direction_centrale_id else ''
+    refresh['structure_id'] = str(user.structure_id) if user.structure_id else ''
+    refresh['direction_activite_id'] = str(user.direction_activite_id) if user.direction_activite_id else ''
+    refresh['division_activite_id'] = str(user.division_activite_id) if user.division_activite_id else ''
 
+    # ✅ IMPORTANT: Créer un contexte avec le token d'accès
+    # Ajouter le token dans les headers de la requête pour que le serializer puisse le récupérer
+    request.META['HTTP_AUTHORIZATION'] = f'Bearer {access_token}'
+    
+    # Créer le contexte pour le serializer avec la requête modifiée
+    context = {
+        'request': request,
+        'access_token': access_token  # Token explicite en cas de besoin
+    }
+    
+    # Utiliser le serializer avec le contexte enrichi
+    user_serializer = UserSerializer(user, context=context)
+    user_data = user_serializer.data
 
-    return Response({
+    # Construire la réponse
+    response_data = {
         "status": "success",
-        "role": getattr(user, 'role', None),
+        "message": f"Logged in as {user.prenom} {user.nom}",
         "refresh": str(refresh),
-        "access": str(refresh.access_token),
-        "user_id":str(user.id),
-        "message": f"Logged in as {nom_complet(user)}",
-        "nom_complet": nom_complet(user),
-        "photo_profil": user.photo_profil.url if user.photo_profil else None,   # ✅
-        "activite_id":    str(user.activite_id)    if user.activite_id    else None,   # ✅
-        "direction_id":   str(user.direction_id)   if user.direction_id else None,   # ✅ NEW
-        "departement_id": str(user.departement_id) if user.departement_id else None   # ✅ NEW
-
-    })
-
-
+        "access": access_token,
+        "user_id": str(user.id),
+        "role": user.role,
+        "nom_complet": f"{user.prenom} {user.nom}".strip(),
+        "photo_profil": user.photo_profil.url if user.photo_profil else None,
+        
+        # IDs
+        "activite_id": str(user.activite_id) if user.activite_id else None,
+        "direction_id": str(user.direction_id) if user.direction_id else None,
+        "departement_id": str(user.departement_id) if user.departement_id else None,
+        "direction_centrale_id": str(user.direction_centrale_id) if user.direction_centrale_id else None,
+        "structure_id": str(user.structure_id) if user.structure_id else None,
+        "direction_activite_id": str(user.direction_activite_id) if user.direction_activite_id else None,
+        "division_activite_id": str(user.division_activite_id) if user.division_activite_id else None,
+        
+        # Données enrichies (via le serializer)
+        "activite_detail": user_data.get("activite_detail"),
+        "direction_detail": user_data.get("direction_detail"),
+        "departement_detail": user_data.get("departement_detail"),
+        "direction_centrale_detail": user_data.get("direction_centrale_detail"),
+        "direction_activite_detail": user_data.get("direction_activite_detail"),
+        "division_activite_detail": user_data.get("division_activite_detail"),
+        "structure_detail": user_data.get("structure_detail"),
+    }
+    
+    # Valider la réponse avec le serializer (optionnel)
+    response_serializer = UserLoginResponseSerializer(data=response_data)
+    if response_serializer.is_valid():
+        return Response(response_serializer.data)
+    else:
+        # En cas d'erreur de validation, retourner quand même les données
+        print(f"[LOGIN] Validation error: {response_serializer.errors}")
+        return Response(response_data)
 # ==========================
 # LOGOUT
 # ==========================
@@ -350,12 +599,12 @@ from django.core.exceptions import ObjectDoesNotExist
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def api_update_user(request, user_id):
     # Vérification admin
-    if request.user.role != 'admin':
-        return Response({
-            "status": "error",
-            "code": "FORBIDDEN",
-            "message": "Accès admin uniquement"
-        }, status=403)
+    # if request.user.role != 'admin':
+    #     return Response({
+    #         "status": "error",
+    #         "code": "FORBIDDEN",
+    #         "message": "Accès admin uniquement"
+    #     }, status=403)
 
     # Récupération de l'utilisateur
     try:
@@ -384,6 +633,12 @@ def api_update_user(request, user_id):
             "activite_id": user_obj.activite_id,
             "direction_id": user_obj.direction_id,
             "departement_id": user_obj.departement_id,
+            # "direction_division_id": user_obj.direction_division_id,
+            # "departement_division_id":user_obj.departement_division_id,
+            "direction_activite_id":user_obj.direction_activite_id,
+            "structure_id":user_obj.structure_id,
+            "division_activite_id":user_obj.division_activite_id,
+            "direction_centrale_id":user_obj.direction_centrale_id,
             "is_active": user_obj.is_active,
             "photo_profil": user_obj.photo_profil.url if user_obj.photo_profil else None,
             "date_joined": user_obj.date_joined.isoformat() if hasattr(user_obj, 'date_joined') and user_obj.date_joined else None,
@@ -422,7 +677,27 @@ def api_update_user(request, user_id):
             }, status=400)
 
     # 🔥 TRAITEMENT DES AUTRES CHAMPS
-    fields = ['nom', 'prenom', 'email', 'adresse', 'telephone', 'matricule', 'sexe', 'activite_id', 'direction_id', 'departement_id']
+    # fields = ['nom', 'prenom', 'email', 'adresse', 'telephone', 'matricule', 'sexe', 'activite_id', 'direction_id', 'departement_id']
+    fields = [
+    'nom',
+    'prenom',
+    'email',
+    'adresse',
+    'telephone',
+    'matricule',
+    'sexe',
+    'activite_id',
+    'direction_id',
+    'departement_id',
+
+    # ✅ AJOUTER CES CHAMPS
+    'direction_centrale_id',
+    # 'direction_division_id',
+    # 'departement_division_id',
+    'structure_id',
+    'direction_activite_id',
+    'division_activite_id'
+]
     
     for field in fields:
         if field in data:
@@ -524,6 +799,12 @@ def api_list_users(request):
             "activite_id": u.activite_id,
             "direction_id": u.direction_id,
             "departement_id": u.departement_id,
+            "direction_centrale_id": u.direction_centrale_id,
+            # "direction_division_id": u.direction_division_id,
+            # "departement_division_id": u.departement_division_id,
+            "structure_id":u.structure_id,
+            "direction_activite_id": u.direction_activite_id,
+            "division_activite_id": u.division_activite_id,
             "is_active": u.is_active,
             "is_staff": u.is_staff,
             "is_superuser": u.is_superuser,
@@ -571,6 +852,12 @@ def api_list_all_users(request):
             "activite_id": u.activite_id,
             "direction_id":u.direction_id,
             "departement_id":u.departement_id,
+            "direction_centrale_id": u.direction_centrale_id,
+            # "direction_division_id": u.direction_division_id,
+            # "departement_division_id": u.departement_division_id,
+            "structure_id":u.structure_id,
+            "direction_activite_id": u.direction_activite_id,
+            "division_activite_id": u.division_activite_id,
             "is_active": u.is_active,
             "is_superuser": u.is_superuser,
             "photo_profil": u.photo_profil.url if u.photo_profil else None,
@@ -609,6 +896,12 @@ def api_list_all_users_public(request):
             "activite_id": u.activite_id,
             "direction_id": u.direction_id,
             "departement_id": u.departement_id,
+            "direction_centrale_id": u.direction_centrale_id,
+            # "direction_division_id": u.direction_division_id,
+            # "departement_division_id": u.departement_division_id,
+            "structure_id":u.structure_id,
+            "direction_activite_id": u.direction_activite_id,
+            "division_activite_id": u.division_activite_id,
             "is_active": u.is_active,
             "is_superuser": u.is_superuser,
             "photo_profil": u.photo_profil.url if u.photo_profil else None,
@@ -646,6 +939,12 @@ def api_get_user_by_id(request, user_id):
             "activite_id": user.activite_id,
             "direction_id": user.direction_id,
             "departement_id": user.departement_id,
+            "direction_centrale_id": user.direction_centrale_id,
+            # "direction_division_id": user.direction_division_id,
+            # "departement_division_id": user.departement_division_id,
+            "structure_id":user.structure_id,
+            "direction_activite_id": user.direction_activite_id,
+            "division_activite_id": user.division_activite_id,
 
             "is_active": user.is_active,
             "is_staff": user.is_staff,
@@ -721,6 +1020,12 @@ def api_get_user(request, user_id):
         "activite_id": user.activite_id,
         "direction_id": user.direction_id,
         "departement_id": user.departement_id,
+        "direction_centrale_id": user.direction_centrale_id,
+        # "direction_division_id": user.direction_division_id,
+        # "departement_division_id": user.departement_division_id,
+        "structure_id":user.structure_id,
+        "direction_activite_id": user.direction_activite_id,
+        "division_activite_id": user.division_activite_id,
         
         # === MÉDIAS ===
         "photo_profil": user.photo_profil.url if user.photo_profil else None,
@@ -1032,3 +1337,188 @@ def refresh_user_token(request):
         "departement_id": user.departement_id,
         "message": "Token rafraîchi avec succès"
     })
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([IsAuthenticated])  # Pas besoin d'admin, juste authentifié
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def api_update_own_profile(request):
+    """
+    PUT/PATCH /auth/users/me/update/
+    
+    Permet à un utilisateur de modifier son propre profil
+    (admin peut tout modifier, utilisateur normal seulement certains champs)
+    """
+    user = request.user  # L'utilisateur authentifié
+    
+    # Champs que tout le monde peut modifier
+    public_fields = ['nom', 'prenom', 'adresse', 'telephone', 'sexe', 'date_naissance', 'photo_profil']
+    
+    # Champs réservés aux admins
+    admin_only_fields = ['role', 'email', 'matricule', 'is_active', 
+                         'activite_id', 'direction_id', 'departement_id',
+                         'direction_centrale_id', 'division_activite_id',
+                         'direction_activite_id', 'structure_id',
+                        ]
+    
+    def format_user_info(user_obj):
+        return {
+            "id": user_obj.id,
+            "nom": user_obj.nom,
+            "prenom": user_obj.prenom,
+            "nom_complet": f"{user_obj.prenom} {user_obj.nom}".strip(),
+            "email": user_obj.email,
+            "role": user_obj.role,
+            "adresse": user_obj.adresse,
+            "telephone": user_obj.telephone,
+            "matricule": user_obj.matricule,
+            "sexe": user_obj.sexe,
+            "date_naissance": user_obj.date_naissance.isoformat() if user_obj.date_naissance else None,
+            "activite_id": user_obj.activite_id,
+            "direction_id": user_obj.direction_id,
+            "departement_id": user_obj.departement_id,
+            "direction_centrale_id": user_obj.direction_centrale_id,
+            "is_active": user_obj.is_active,
+            "photo_profil": user_obj.photo_profil.url if user_obj.photo_profil else None,
+        }
+    
+    # Sauvegarder l'état avant modification
+    user_before = format_user_info(user)
+    modifications = []
+    is_admin = user.role == 'admin'
+    
+    data = request.data
+    
+    # 🔥 TRAITEMENT DES CHAMPS PUBLICS (tout le monde peut modifier)
+    for field in public_fields:
+        if field in data:
+            old_value = getattr(user, field)
+            new_value = data[field]
+            
+            # Nettoyer les valeurs vides
+            if new_value == '' or new_value == 'null':
+                new_value = None
+            
+            setattr(user, field, new_value)
+            modifications.append(f"{field}: {old_value} → {new_value}")
+    
+    # 🔥 TRAITEMENT DES CHAMPS ADMIN (seulement si l'utilisateur est admin)
+    if is_admin:
+        for field in admin_only_fields:
+            if field in data:
+                old_value = getattr(user, field)
+                new_value = data[field]
+                
+                # Nettoyer les valeurs vides
+                if new_value == '' or new_value == 'null':
+                    new_value = None
+                
+                # Vérification spéciale pour le rôle
+                if field == 'role' and new_value is not None:
+                    valid_roles = [role[0] for role in User.ROLE_CHOICES]
+                    if new_value not in valid_roles:
+                        return Response({
+                            "status": "error",
+                            "code": "INVALID_ROLE",
+                            "message": f"Rôle invalide: {new_value}",
+                            "valid_roles": valid_roles
+                        }, status=400)
+                
+                setattr(user, field, new_value)
+                modifications.append(f"{field}: {old_value} → {new_value}")
+    else:
+        # Si non-admin essaie de modifier un champ admin, on ignore silencieusement
+        for field in admin_only_fields:
+            if field in data:
+                modifications.append(f"{field}: ignoré (non autorisé)")
+    
+    # 🔥 TRAITEMENT SPÉCIAL DE LA DATE DE NAISSANCE
+    if 'date_naissance' in data:
+        date_value = data['date_naissance']
+        if date_value is None or date_value == '' or date_value == 'null':
+            user.date_naissance = None
+        elif date_value:
+            try:
+                user.date_naissance = datetime.strptime(str(date_value).strip(), "%Y-%m-%d").date()
+            except ValueError:
+                return Response({
+                    "status": "error",
+                    "code": "INVALID_DATE_FORMAT",
+                    "message": "Format date invalide. Utilisez YYYY-MM-DD"
+                }, status=400)
+    
+    # 🔥 TRAITEMENT DE LA PHOTO
+    photo_updated = False
+    if 'photo_profil' in request.FILES:
+        user.photo_profil = request.FILES['photo_profil']
+        photo_updated = True
+        modifications.append("photo_profil: mise à jour")
+    
+    # Sauvegarder
+    user.save()
+    
+    # État après modification
+    user_after = format_user_info(user)
+    
+    return Response({
+        "status": "success",
+        "code": "PROFILE_UPDATED",
+        "message": "Profil mis à jour avec succès",
+        "summary": {
+            "modified_fields_count": len([m for m in modifications if "ignoré" not in m]),
+            "modifications": modifications,
+            "photo_updated": photo_updated,
+            "is_admin": is_admin
+        },
+        "before": user_before,
+        "after": user_after,
+        "metadata": {
+            "updated_by": user.id,
+            "timestamp": datetime.now().isoformat(),
+            "method": request.method
+        }
+    }, status=200)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def api_get_own_profile(request):
+    """
+    GET /auth/users/me/
+    
+    Récupère le profil de l'utilisateur authentifié
+    """
+    user = request.user
+    
+    return Response({
+        "status": "success",
+        "data": {
+            "id": user.id,
+            "nom": user.nom,
+            "prenom": user.prenom,
+            "nom_complet": f"{user.prenom} {user.nom}".strip(),
+            "email": user.email,
+            "role": user.role,
+            "adresse": user.adresse,
+            "telephone": user.telephone,
+            "matricule": user.matricule,
+            "sexe": user.sexe,
+            "date_naissance": user.date_naissance.isoformat() if user.date_naissance else None,
+            "activite_id": user.activite_id,
+            "direction_id": user.direction_id,
+            "departement_id": user.departement_id,
+            "direction_centrale_id": user.direction_centrale_id,
+            "division_activite_id": user.division_activite_id,
+            "direction_activite_id": user.direction_activite_id,
+            # "departement_division_id": user.departement_division_id,
+            # "direction_division_id": user.direction_division_id,
+            "structure_id":user.structure_id,
+            "is_active": user.is_active,
+            "photo_profil": user.photo_profil.url if user.photo_profil else None,
+            "date_joined": user.date_joined.isoformat() if hasattr(user, 'date_joined') and user.date_joined else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None
+        },
+        "metadata": {
+            "timestamp": datetime.now().isoformat()
+        }
+    }, status=200)

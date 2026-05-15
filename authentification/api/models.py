@@ -42,9 +42,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('admin',                 'Admin'),
         ('agent',                  'Agent'),
-        ('directeur_activite',      'Directeur Activité'),
+        ('vice_presedent',      'Vice Presedent'),
         ('directeur_direction',   'Directeur de Direction'),
         ('responsable_departement','Responsable de Département'),
+        ('directeur_centrale',             'Directeur Centrale'),
+        ('assistant_directeur_centrale',   'Assistant Directeur Centrale'),
+        ('directeur_direction_activite',   'Directeur Direction Activité'),
+        ('directeur_division_activite',    'Directeur Division Activité'),
+        ('responsable_direction_division', 'Responsable Direction Division'),
+        ('responsable_departement_division','Responsable Département Division'),
+        
     ]
 
     SEXE_CHOICES = [('M', 'Masculin'), ('F', 'Féminin')]
@@ -53,7 +60,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email        = models.EmailField(unique=True)
     nom          = models.CharField(max_length=50)
     prenom       = models.CharField(max_length=50)
-    role         = models.CharField(max_length=30, choices=ROLE_CHOICES,blank=True, null=True)
+    role         = models.CharField(max_length=50, choices=ROLE_CHOICES,blank=True, null=True)
     photo_profil = CloudinaryField('image', blank=True, null=True)
 
     # --- Champs communs employé ---
@@ -67,6 +74,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     activite_id    = models.CharField(max_length=24, blank=True, null=True)
     direction_id   = models.CharField(max_length=24, blank=True, null=True)
     departement_id = models.CharField(max_length=24, blank=True, null=True)
+
+    direction_centrale_id   = models.CharField(max_length=24, blank=True, null=True)
+    # activite(division/direction)
+    division_activite_id   = models.CharField(max_length=24, blank=True, null=True)
+    direction_activite_id   = models.CharField(max_length=24, blank=True, null=True)
+    #dividion ( departement/direction)
+    structure_id   = models.CharField(max_length=24, blank=True, null=True)
+    
+    
+
+    
+    
 
     # --- Flags Django ---
     is_active    = models.BooleanField(default=True)

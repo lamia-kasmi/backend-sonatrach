@@ -33,12 +33,12 @@ class IsResponsableDepartement(BasePermission):
      
 
 # permissions.py — ajouter ce qui manque
-class IsDirecteurActivite(BasePermission):
+class IsVicePresedent(BasePermission):
     def has_permission(self, request, view):
         return (
             request.user
             and request.user.is_authenticated
-            and getattr(request.user, 'role', None) == 'directeur_activite'
+            and getattr(request.user, 'role', None) == 'vice_presedent'
         )
 class IsDirecteurDirection(BasePermission):
     def has_permission(self, request, view):
@@ -46,4 +46,56 @@ class IsDirecteurDirection(BasePermission):
             request.user
             and request.user.is_authenticated
             and getattr(request.user, 'role', None) == 'directeur_direction'
+        )
+class IsDirecteurCentrale(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'directeur_centrale'
+        )
+
+
+class IsAssistantDirecteurCentrale(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'assistant_directeur_centrale'
+        )
+
+
+class IsDirecteurDirectionActivite(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'directeur_direction_activite'
+        )
+
+
+class IsDirecteurDivisionActivite(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'directeur_division_activite'
+        )
+
+
+class IsResponsableDirectionDivision(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'responsable_direction_division'
+        )
+
+
+class IsResponsableDepartementDivision(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and get_role(request.user) == 'responsable_departement_division'
         )
