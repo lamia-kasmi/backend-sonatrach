@@ -449,7 +449,7 @@ class OrgFieldsMixin:
     departement_division_id = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     direction_activite_id   = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     division_activite_id    = serializers.CharField(required=False, allow_null=True, allow_blank=True)
-
+    structure_id            = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. USER SUMMARY

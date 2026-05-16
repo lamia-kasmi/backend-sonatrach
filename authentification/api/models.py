@@ -42,10 +42,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('admin',                 'Admin'),
         ('agent',                  'Agent'),
-        ('vice_presedent',      'Vice Presedent'),
-        ('directeur_direction',   'Directeur de Direction'),
+        ('vice_presedent',      'Vice Presedent'),#
+        ('directeur_direction',   'Directeur de Direction'),#
         ('responsable_departement','Responsable de Département'),
-        ('directeur_centrale',             'Directeur Centrale'),
+        ('directeur_centrale',             'Directeur Centrale'),#
         ('assistant_directeur_centrale',   'Assistant Directeur Centrale'),
         ('directeur_direction_activite',   'Directeur Direction Activité'),
         ('directeur_division_activite',    'Directeur Division Activité'),

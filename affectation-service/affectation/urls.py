@@ -85,4 +85,49 @@ urlpatterns = [
     path('users/responsables-departement-division/',          views.api_list_responsables_departement_division,          name='list-responsables-departement-division'),
     path('users/responsables-departement-division/affectes/', views.api_list_responsables_departement_division_affectes, name='list-responsables-departement-division-affectes'),
     path('users/responsables-departement-division/all/',      views.api_list_all_responsables_departement_division,      name='list-all-responsables-departement-division'),
+
+    # ── GET par champ organisationnel ─────────────────────────────────────────────
+    path('directions/<str:direction_id>/responsables-departement/',
+        views.api_list_responsables_by_direction,
+        name='responsables-by-direction'),
+
+    path('departements/<str:departement_id>/responsables-departement/',
+        views.api_list_responsables_by_departement,
+        name='responsables-by-departement'),
+
+    path('activites/<str:activite_id>/directeurs-direction/',
+        views.api_list_directeurs_direction_by_activite,
+        name='directeurs-direction-by-activite'),
+
+    path('activites/<str:activite_id>/vice-presidents/',
+        views.api_list_vice_presidents_by_activite,
+        name='vice-presidents-by-activite'),
+
+    path('activites/<str:activite_id>/directeurs-direction-activite/',
+        views.api_list_directeurs_direction_activite_by_activite,
+        name='directeurs-direction-activite-by-activite'),
+
+    path('directions-centrales/<str:direction_centrale_id>/directeurs-centrale/',
+        views.api_list_directeurs_centrale_by_direction_centrale,
+        name='directeurs-centrale-by-direction-centrale'),
+
+    path('directions-centrales/<str:direction_centrale_id>/assistants/',
+        views.api_list_assistants_by_direction_centrale,
+        name='assistants-by-direction-centrale'),
+
+    path('structures/<str:structure_id>/directeurs-division-activite/',
+        views.api_list_directeurs_division_activite_by_structure,
+        name='directeurs-division-activite-by-structure'),
+
+    path('structures/<str:structure_id>/responsables-direction-division/',
+        views.api_list_responsables_direction_division_by_structure,
+        name='responsables-direction-division-by-structure'),
+
+    path('structures/<str:structure_id>/responsables-departement-division/',
+        views.api_list_responsables_departement_division_by_structure,
+        name='responsables-departement-division-by-structure'),
+
+
+
+
     ]
