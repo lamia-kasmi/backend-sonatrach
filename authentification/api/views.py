@@ -1128,13 +1128,299 @@ def api_me(request):
         'departement_id': str(user.departement_id) if user.departement_id else None,
         'is_active': user.is_active,
     })
+# @api_view(['PATCH'])
+# @permission_classes([IsAuthenticated])
+# def api_update_user_role(request, user_id):
+#     """
+#     Endpoint spécifique pour mettre à jour uniquement le rôle d'un utilisateur
+#     """
+#     # Vérification admin
+#     if request.user.role != 'admin':
+#         return Response({
+#             "status": "error",
+#             "code": "FORBIDDEN",
+#             "message": "Accès admin uniquement"
+#         }, status=403)
+
+#     # Récupération de l'utilisateur
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return Response({
+#             "status": "error",
+#             "code": "USER_NOT_FOUND",
+#             "message": f"Utilisateur avec l'ID {user_id} non trouvé"
+#         }, status=404)
+
+#     # Récupération du nouveau rôle
+#     new_role = request.data.get('role')
+    
+#     if new_role is None:
+#         return Response({
+#             "status": "error",
+#             "code": "MISSING_ROLE",
+#             "message": "Le champ 'role' est requis"
+#         }, status=400)
+
+#     # Liste des rôles valides
+#     valid_roles = [role[0] for role in User.ROLE_CHOICES]
+    
+#     # Vérification si le rôle est valide
+#     if new_role not in valid_roles:
+#         return Response({
+#             "status": "error",
+#             "code": "INVALID_ROLE",
+#             "message": f"Rôle invalide: {new_role}",
+#             "valid_roles": valid_roles,
+#             "suggestion": f"Choisissez parmi: {', '.join(valid_roles)}"
+#         }, status=400)
+
+#     # Sauvegarder l'ancien rôle
+#     old_role = user.role
+    
+#     # Mettre à jour le rôle
+#     user.role = new_role
+#     user.save()
+
+#     return Response({
+#         "status": "success",
+#         "code": "ROLE_UPDATED",
+#         "message": f"Rôle de {user.prenom} {user.nom} mis à jour avec succès",
+#         "data": {
+#             "user_id": user.id,
+#             "user_name": f"{user.prenom} {user.nom}",
+#             "old_role": old_role,
+#             "new_role": new_role,
+#             "updated_by": {
+#                 "id": request.user.id,
+#                 "name": f"{request.user.prenom} {request.user.nom}",
+#                 "role": request.user.role
+#             }
+#         }
+#     }, status=200)
+# @api_view(['PATCH'])
+# @permission_classes([IsAuthenticated])
+# def api_update_user_role(request, user_id):
+#     if request.user.role != 'admin':
+#         return Response({
+#             "status": "error",
+#             "code": "FORBIDDEN",
+#             "message": "Accès admin uniquement"
+#         }, status=403)
+
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return Response({
+#             "status": "error",
+#             "code": "USER_NOT_FOUND",
+#             "message": f"Utilisateur avec l'ID {user_id} non trouvé"
+#         }, status=404)
+
+#     new_role = request.data.get('role')
+#     if new_role is None:
+#         return Response({
+#             "status": "error",
+#             "code": "MISSING_ROLE",
+#             "message": "Le champ 'role' est requis"
+#         }, status=400)
+
+#     valid_roles = [role[0] for role in User.ROLE_CHOICES]
+#     if new_role not in valid_roles:
+#         return Response({
+#             "status": "error",
+#             "code": "INVALID_ROLE",
+#             "message": f"Rôle invalide: {new_role}",
+#             "valid_roles": valid_roles,
+#             "suggestion": f"Choisissez parmi: {', '.join(valid_roles)}"
+#         }, status=400)
+
+#     old_role = user.role
+
+#     # ─── Reset tous les champs liés avant d'appliquer ────────────────────────
+#     LINKED_FIELDS = [
+#         'direction_centrale_id',
+#         'direction_id',
+#         'departement_id',
+#         'activite_id',
+#         'structure_id',
+#         'division_activite_id',
+#         'direction_activite_id',
+#     ]
+#     for field in LINKED_FIELDS:
+#         setattr(user, field, None)
+
+#     # ─── Mapping rôle → champ requis ─────────────────────────────────────────
+#     ROLE_FIELD_MAP = {
+#         'assistant_directeur_centrale':     'direction_centrale_id',
+#         'responsable_departement':          'direction_id',
+#         'responsable_departement_division': 'direction_id',
+#         'directeur_direction_activite':     'activite_id',
+#         'directeur_division_activite':      'structure_id',
+#         'responsable_direction_division':   'structure_id',
+#     }
+
+#     if new_role in ROLE_FIELD_MAP:
+#         field_name = ROLE_FIELD_MAP[new_role]
+#         field_value = request.data.get(field_name)
+#         if field_value:
+#             setattr(user, field_name, field_value)
+#         # pas de 400 ici : la validation est déjà faite dans affectation-service
+#     # ──────────────────────────────────────────────────────────────────────────
+
+#     user.role = new_role
+#     user.save()
+
+#     return Response({
+#         "status": "success",
+#         "code": "ROLE_UPDATED",
+#         "message": f"Rôle de {user.prenom} {user.nom} mis à jour avec succès",
+#         "data": {
+#             "user_id":   user.id,
+#             "user_name": f"{user.prenom} {user.nom}",
+#             "old_role":  old_role,
+#             "new_role":  new_role,
+#             # retourner les champs liés pour que affectation-service puisse les lire
+#             "linked_fields": {f: getattr(user, f) for f in LINKED_FIELDS},
+#             "updated_by": {
+#                 "id":   request.user.id,
+#                 "name": f"{request.user.prenom} {request.user.nom}",
+#                 "role": request.user.role
+#             }
+#         }
+#     }, status=200)
+# @api_view(['PATCH'])
+# @permission_classes([IsAuthenticated])
+# def api_update_user_role(request, user_id):
+#     """
+#     PATCH /api/users/{user_id}/update-role/
+    
+#     Met à jour le rôle d'un utilisateur et ses champs liés.
+#     """
+    
+#     # Vérification admin
+#     if request.user.role != 'admin':
+#         return Response({
+#             "status": "error",
+#             "code": "FORBIDDEN",
+#             "message": "Accès admin uniquement"
+#         }, status=403)
+    
+#     # Récupération utilisateur
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return Response({
+#             "status": "error",
+#             "code": "USER_NOT_FOUND",
+#             "message": f"Utilisateur avec l'ID {user_id} non trouvé"
+#         }, status=404)
+    
+#     # Vérification rôle
+#     new_role = request.data.get('role')
+#     if new_role is None:
+#         return Response({
+#             "status": "error",
+#             "code": "MISSING_ROLE",
+#             "message": "Le champ 'role' est requis"
+#         }, status=400)
+    
+#     valid_roles = [role[0] for role in User.ROLE_CHOICES]
+#     if new_role not in valid_roles:
+#         return Response({
+#             "status": "error",
+#             "code": "INVALID_ROLE",
+#             "message": f"Rôle invalide: {new_role}",
+#             "valid_roles": valid_roles
+#         }, status=400)
+    
+#     old_role = user.role
+    
+#     # ──────────────────────────────────────────────────────────────
+#     # 1. Réinitialiser TOUS les champs liés (peu importe le rôle)
+#     # ──────────────────────────────────────────────────────────────
+#     LINKED_FIELDS = [
+#         'direction_centrale_id',
+#         'direction_id',
+#         'departement_id',
+#         'activite_id',
+#         'structure_id',
+#         'division_activite_id',
+#         'direction_activite_id',
+#     ]
+    
+#     for field in LINKED_FIELDS:
+#         setattr(user, field, None)
+    
+#     # ──────────────────────────────────────────────────────────────
+#     # 2. Appliquer les nouveaux champs liés depuis la requête
+#     # ──────────────────────────────────────────────────────────────
+#     # Mapping rôle → champ requis (pour validation seulement)
+#     ROLE_REQUIRED_FIELD = {
+#         'assistant_directeur_centrale':     'direction_centrale_id',
+#         'responsable_departement':          'direction_id',
+#         'responsable_departement_division': 'direction_id',
+#         'directeur_direction_activite':     'activite_id',
+#         'directeur_division_activite':      'structure_id',
+#         'responsable_direction_division':   'structure_id',
+#     }
+    
+#     # Mettre à jour TOUS les champs liés présents dans la requête
+#     # (pas seulement ceux du mapping - important !)
+#     for field in LINKED_FIELDS:
+#         if field in request.data:
+#             field_value = request.data.get(field)
+#             if field_value:
+#                 setattr(user, field, field_value)
+#                 print(f"DEBUG: Setting {field} = {field_value}")
+    
+#     # ──────────────────────────────────────────────────────────────
+#     # 3. Validation optionnelle : champ requis présent ?
+#     # ──────────────────────────────────────────────────────────────
+#     if new_role in ROLE_REQUIRED_FIELD:
+#         required_field = ROLE_REQUIRED_FIELD[new_role]
+#         if not getattr(user, required_field, None):
+#             # Ne pas bloquer si absent, car affectation-service gère déjà
+#             # Mais on log pour debug
+#             print(f"WARNING: Rôle {new_role} sans {required_field}")
+    
+#     # ──────────────────────────────────────────────────────────────
+#     # 4. Appliquer le nouveau rôle
+#     # ──────────────────────────────────────────────────────────────
+#     user.role = new_role
+#     user.save()
+    
+#     # ──────────────────────────────────────────────────────────────
+#     # 5. Retourner toutes les données (pour affectation-service)
+#     # ──────────────────────────────────────────────────────────────
+#     return Response({
+#         "status": "success",
+#         "code": "ROLE_UPDATED",
+#         "message": f"Rôle de {user.prenom} {user.nom} mis à jour avec succès",
+#         "data": {
+#             "user_id":   user.id,
+#             "user_name": f"{user.prenom} {user.nom}",
+#             "old_role":  old_role,
+#             "new_role":  new_role,
+#             # Retourner TOUS les champs liés pour que affectation-service puisse les lire
+#             "linked_fields": {
+#                 field: getattr(user, field, None) for field in LINKED_FIELDS
+#             },
+#             "updated_by": {
+#                 "id":   request.user.id,
+#                 "name": f"{request.user.prenom} {request.user.nom}",
+#                 "role": request.user.role
+#             }
+#         }
+#     }, status=200)
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def api_update_user_role(request, user_id):
     """
-    Endpoint spécifique pour mettre à jour uniquement le rôle d'un utilisateur
+    PATCH /auth/users/<user_id>/update-role/
     """
-    # Vérification admin
+
+    # ── Permission admin ──────────────────────────────────────────────
     if request.user.role != 'admin':
         return Response({
             "status": "error",
@@ -1142,7 +1428,7 @@ def api_update_user_role(request, user_id):
             "message": "Accès admin uniquement"
         }, status=403)
 
-    # Récupération de l'utilisateur
+    # ── Récupération utilisateur ──────────────────────────────────────
     try:
         user = User.objects.get(id=user_id)
     except User.DoesNotExist:
@@ -1152,9 +1438,9 @@ def api_update_user_role(request, user_id):
             "message": f"Utilisateur avec l'ID {user_id} non trouvé"
         }, status=404)
 
-    # Récupération du nouveau rôle
+    # ── Validation rôle ───────────────────────────────────────────────
     new_role = request.data.get('role')
-    
+
     if new_role is None:
         return Response({
             "status": "error",
@@ -1162,37 +1448,70 @@ def api_update_user_role(request, user_id):
             "message": "Le champ 'role' est requis"
         }, status=400)
 
-    # Liste des rôles valides
-    valid_roles = [role[0] for role in User.ROLE_CHOICES]
-    
-    # Vérification si le rôle est valide
+    valid_roles = [r[0] for r in User.ROLE_CHOICES]
+
     if new_role not in valid_roles:
         return Response({
             "status": "error",
             "code": "INVALID_ROLE",
             "message": f"Rôle invalide: {new_role}",
-            "valid_roles": valid_roles,
-            "suggestion": f"Choisissez parmi: {', '.join(valid_roles)}"
+            "valid_roles": valid_roles
         }, status=400)
 
-    # Sauvegarder l'ancien rôle
     old_role = user.role
-    
-    # Mettre à jour le rôle
+
+    # ── 1. Reset tous les champs liés ────────────────────────────────
+    LINKED_FIELDS = [
+        'direction_centrale_id',
+        'direction_id',
+        'departement_id',
+        'activite_id',
+        'structure_id',
+        'division_activite_id',
+        'direction_activite_id',
+    ]
+
+    for field in LINKED_FIELDS:
+        setattr(user, field, None)
+
+    # ── 2. Appliquer les champs liés reçus ───────────────────────────
+    # On itère sur LINKED_FIELDS et on accepte toute valeur présente
+    # dans request.data, y compris None (reset explicite)
+    print(f"[UPDATE-ROLE] request.data = {dict(request.data)}")
+
+    for field in LINKED_FIELDS:
+        if field in request.data:
+            value = request.data.get(field)
+            # Convertir "" en None, garder None tel quel, garder la vraie valeur
+            setattr(user, field, value if value else None)
+            print(f"[UPDATE-ROLE] {field} = {value!r}")
+
+    # ── 3. Appliquer le nouveau rôle ─────────────────────────────────
     user.role = new_role
     user.save()
 
+    print(f"[UPDATE-ROLE] Sauvegardé — role={user.role}, "
+          f"direction_centrale_id={user.direction_centrale_id}, "
+          f"direction_id={user.direction_id}, "
+          f"activite_id={user.activite_id}, "
+          f"structure_id={user.structure_id}")
+
+    # ── 4. Réponse complète ───────────────────────────────────────────
     return Response({
         "status": "success",
         "code": "ROLE_UPDATED",
         "message": f"Rôle de {user.prenom} {user.nom} mis à jour avec succès",
         "data": {
-            "user_id": user.id,
+            "user_id":   user.id,
             "user_name": f"{user.prenom} {user.nom}",
-            "old_role": old_role,
-            "new_role": new_role,
+            "old_role":  old_role,
+            "new_role":  new_role,
+            "linked_fields": {
+                field: getattr(user, field, None)
+                for field in LINKED_FIELDS
+            },
             "updated_by": {
-                "id": request.user.id,
+                "id":   request.user.id,
                 "name": f"{request.user.prenom} {request.user.nom}",
                 "role": request.user.role
             }

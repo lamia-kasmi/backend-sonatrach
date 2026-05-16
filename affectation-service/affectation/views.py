@@ -2334,7 +2334,80 @@ def _call_juridique(method: str, path: str, token: str, **kwargs):
 #         u for u in users_list
 #         if isinstance(u, dict)
 #     ]
+def _deserialize_user(user_dict: dict) -> dict:
+    """
+    Normalise le dict user retourné par Auth sans passer par un serializer.
+    Lecture directe → aucune perte de champ possible.
+    """
+    if not user_dict or not isinstance(user_dict, dict):
+        return {}
 
+    prenom = user_dict.get('prenom', '') or ''
+    nom    = user_dict.get('nom', '')    or ''
+
+    return {
+        # ── Identité ──────────────────────────────────────────────
+        'id':          user_dict.get('id'),
+        'email':       user_dict.get('email'),
+        'nom':         nom,
+        'prenom':      prenom,
+        'nom_complet': user_dict.get('nom_complet') or f"{prenom} {nom}".strip(),
+
+        # ── Rôle & flags ──────────────────────────────────────────
+        'role':         user_dict.get('role'),
+        'role_display': user_dict.get('role_display'),
+        'is_active':    user_dict.get('is_active', True),
+        'is_staff':     user_dict.get('is_staff', False),
+        'is_superuser': user_dict.get('is_superuser', False),
+
+        # ── Infos pro ─────────────────────────────────────────────
+        'matricule': user_dict.get('matricule'),
+        'telephone': user_dict.get('telephone'),
+        'adresse':   user_dict.get('adresse'),
+
+        # ── Infos perso ───────────────────────────────────────────
+        'sexe':           user_dict.get('sexe'),
+        'sexe_display':   user_dict.get('sexe_display'),
+        'date_naissance': user_dict.get('date_naissance'),
+        'age':            user_dict.get('age'),
+
+        # ── Médias & dates ────────────────────────────────────────
+        'photo_profil': user_dict.get('photo_profil'),
+        'last_login':   user_dict.get('last_login'),
+        'date_joined':  user_dict.get('date_joined'),
+
+        # ── Groupes & permissions ─────────────────────────────────
+        'groups':           user_dict.get('groups', []),
+        'user_permissions': user_dict.get('user_permissions', []),
+
+        # ── Méta compte ───────────────────────────────────────────
+        'account_stats': user_dict.get('account_stats', {}),
+        'other_info':    user_dict.get('other_info', {}),
+        'admin_info':    user_dict.get('admin_info', {}),
+
+        # ── IDs organisationnels — lecture directe, aucun filtre ──
+        'activite_id':           user_dict.get('activite_id'),
+        'direction_id':          user_dict.get('direction_id'),
+        'departement_id':        user_dict.get('departement_id'),
+        'direction_centrale_id': user_dict.get('direction_centrale_id'),
+        'direction_activite_id': user_dict.get('direction_activite_id'),
+        'division_activite_id':  user_dict.get('division_activite_id'),
+        'structure_id':          user_dict.get('structure_id'),
+    }
+
+
+def _deserialize_users(users_list: list) -> list:
+    """
+    Normalise une liste de users retournée par Auth.
+    Lecture directe — aucune perte de champ.
+    """
+    if not isinstance(users_list, list):
+        return []
+    return [
+        _deserialize_user(u)
+        for u in users_list
+        if isinstance(u, dict)
+    ]
 # # ──────────────────────────────────────────────────────────────────────────────
 # # HELPER UNIVERSEL : enrichit UN user avec TOUTES ses données juridiques
 # # ──────────────────────────────────────────────────────────────────────────────
@@ -2878,62 +2951,486 @@ def _build_full_users(users: list, token: str) -> list:
 # VIEW : ASSIGN ROLE
 # ──────────────────────────────────────────────────────────────────────────────
 
+# @api_view(['POST'])
+# @authentication_classes([RemoteJWTAuthentication])
+# @permission_classes([IsAdmin])
+# def assign_role(request):
+#     """POST /affectation/assign-role/"""
+#     force_gateway = request.query_params.get('force_gateway', '').lower() == 'true'
+#     token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+#     admin = request.user
+
+#     user_id = request.data.get('user_id')
+#     role    = request.data.get('role')
+
+#     if not user_id:
+#         return Response({"status": "error", "code": "MISSING_USER_ID", "message": "user_id est obligatoire."}, status=400)
+#     if not role:
+#         return Response({"status": "error", "code": "MISSING_ROLE", "message": "role est obligatoire."}, status=400)
+#     if role not in VALID_ROLES:
+#         return Response({"status": "error", "code": "INVALID_ROLE", "message": f"Rôle '{role}' invalide.", "valid_roles": VALID_ROLES}, status=400)
+
+#     # Étape 1 : récupérer l'user
+#     sc, user_response = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+#     if sc == 503:
+#         return Response(user_response, status=503)
+#     if sc == 404:
+#         return Response({"status": "error", "code": "USER_NOT_FOUND", "message": f"Utilisateur {user_id} introuvable."}, status=404)
+#     if sc != 200:
+#         return Response({"status": "error", "code": "AUTH_SERVICE_ERROR", "message": f"Service Auth a retourné {sc}.", "detail": user_response}, status=sc)
+
+#     user_data = _deserialize_user(user_response.get('user', {}))
+
+#     if not user_data:
+#         return Response({"status": "error", "code": "INVALID_RESPONSE", "message": "Structure de réponse invalide du service Auth."}, status=500)
+#     if user_data['role'] == 'admin':
+#         return Response({"status": "error", "code": "CANNOT_MODIFY_ADMIN", "message": "Impossible de modifier le rôle d'un administrateur."}, status=400)
+
+#     previous_role = user_data['role']
+
+#     # Étape 2 : mettre à jour le rôle
+#     sc, updated = _call_auth('patch', f'/auth/users/{user_id}/update-role/', token, json={"role": role}, use_gateway=force_gateway)
+#     if sc == 503:
+#         return Response(updated, status=503)
+#     if sc not in (200, 201):
+#         return Response({"status": "error", "code": "UPDATE_FAILED", "message": f"Impossible de mettre à jour le rôle (status {sc}).", "detail": updated}, status=sc)
+
+#     # Étape 3 : re-fetch pour avoir l'user avec le nouveau rôle + données juridiques
+#     sc2, user_response2 = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+#     if sc2 == 200:
+#         user_data_updated = _deserialize_user(user_response2.get('user', {}))
+#         full_user = _build_full_user(user_data_updated, token)
+#     else:
+#         # fallback : on met à jour manuellement le rôle dans le dict existant
+#         user_data['role'] = role
+#         user_data['role_display'] = ROLE_DISPLAY.get(role, role)
+#         full_user = _build_full_user(user_data, token)
+
+#     admin_name = getattr(admin, 'nom_complet', None) or f"{getattr(admin, 'prenom', '')} {getattr(admin, 'nom', '')}".strip() or str(admin)
+
+#     return Response({
+#         "status": "success",
+#         "code": "ROLE_ASSIGNED",
+#         "message": f"Rôle '{ROLE_DISPLAY.get(role, role)}' affecté à {full_user['nom_complet']}.",
+#         "data": {
+#             **full_user,
+#             "previous_role":         previous_role,
+#             "previous_role_display": ROLE_DISPLAY.get(previous_role, previous_role) if previous_role else None,
+#             "assigned_by": {
+#                 "id":   admin.id,
+#                 "name": admin_name,
+#                 "role": getattr(admin, 'role', 'unknown'),
+#             },
+#             "timestamp": datetime.now().isoformat(),
+#         },
+#         "metadata": {
+#             "source":           "gateway" if force_gateway else "eureka",
+#             "discovery_method": "gateway_forced" if force_gateway else "eureka",
+#             "service":          "affectation-service",
+#             "version":          "1.0.0",
+#         },
+#     }, status=200)
+# @api_view(['POST'])
+# @authentication_classes([RemoteJWTAuthentication])
+# @permission_classes([IsAdmin])
+# def assign_role(request):
+#     """POST /affectation/assign-role/"""
+#     force_gateway = request.query_params.get('force_gateway', '').lower() == 'true'
+#     token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+#     admin = request.user
+
+#     user_id = request.data.get('user_id')
+#     role    = request.data.get('role')
+
+#     # Champs spécifiques selon le rôle
+#     direction_centrale_id = request.data.get('direction_centrale_id')
+#     direction_id          = request.data.get('direction_id')
+#     activite_id           = request.data.get('activite_id')
+#     structure_id          = request.data.get('structure_id')
+
+#     if not user_id:
+#         return Response({"status": "error", "code": "MISSING_USER_ID", "message": "user_id est obligatoire."}, status=400)
+#     if not role:
+#         return Response({"status": "error", "code": "MISSING_ROLE", "message": "role est obligatoire."}, status=400)
+#     if role not in VALID_ROLES:
+#         return Response({"status": "error", "code": "INVALID_ROLE", "message": f"Rôle '{role}' invalide.", "valid_roles": VALID_ROLES}, status=400)
+
+#     # ─── Validation des champs requis selon le rôle ───────────────────────────
+#     ROLE_REQUIRED_FIELDS = {
+#         'assistant_directeur_centrale':    ('direction_centrale_id', direction_centrale_id),
+#         'responsable_departement':         ('direction_id',          direction_id),
+#         'responsable_departement_division':('direction_id',          direction_id),
+#         'directeur_direction_activite':    ('activite_id',           activite_id),
+#         'directeur_division_activite':     ('structure_id',          structure_id),
+#         'responsable_direction_division':  ('structure_id',          structure_id),
+#     }
+
+#     if role in ROLE_REQUIRED_FIELDS:
+#         field_name, field_value = ROLE_REQUIRED_FIELDS[role]
+#         if not field_value:
+#             return Response({
+#                 "status":  "error",
+#                 "code":    f"MISSING_{field_name.upper()}",
+#                 "message": f"'{field_name}' est obligatoire pour le rôle '{role}'.",
+#                 "required_fields": ["user_id", "role", field_name],
+#             }, status=400)
+#     # ──────────────────────────────────────────────────────────────────────────
+
+#     # Étape 1 : récupérer l'user
+#     sc, user_response = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+#     if sc == 503:
+#         return Response(user_response, status=503)
+#     if sc == 404:
+#         return Response({"status": "error", "code": "USER_NOT_FOUND", "message": f"Utilisateur {user_id} introuvable."}, status=404)
+#     if sc != 200:
+#         return Response({"status": "error", "code": "AUTH_SERVICE_ERROR", "message": f"Service Auth a retourné {sc}.", "detail": user_response}, status=sc)
+
+#     user_data = _deserialize_user(user_response.get('user', {}))
+
+#     if not user_data:
+#         return Response({"status": "error", "code": "INVALID_RESPONSE", "message": "Structure de réponse invalide du service Auth."}, status=500)
+#     if user_data['role'] == 'admin':
+#         return Response({"status": "error", "code": "CANNOT_MODIFY_ADMIN", "message": "Impossible de modifier le rôle d'un administrateur."}, status=400)
+
+#     previous_role = user_data['role']
+
+#     # ─── Construire le payload de mise à jour du rôle ────────────────────────
+#     # Tous les champs liés sont réinitialisés puis seul le champ du rôle cible est rempli
+#     role_payload = {
+#         "role":                    role,
+#         "direction_centrale_id":   direction_centrale_id if role == 'assistant_directeur_centrale'                             else None,
+#         "direction_id":            direction_id          if role in ('responsable_departement', 'responsable_departement_division') else None,
+#         "activite_id":             activite_id           if role == 'directeur_direction_activite'                              else None,
+#         "structure_id":            structure_id          if role in ('directeur_division_activite', 'responsable_direction_division') else None,
+#     }
+#     # ──────────────────────────────────────────────────────────────────────────
+
+#     # Étape 2 : mettre à jour le rôle
+#     sc, updated = _call_auth('patch', f'/auth/users/{user_id}/update-role/', token, json=role_payload, use_gateway=force_gateway)
+#     if sc == 503:
+#         return Response(updated, status=503)
+#     if sc not in (200, 201):
+#         return Response({"status": "error", "code": "UPDATE_FAILED", "message": f"Impossible de mettre à jour le rôle (status {sc}).", "detail": updated}, status=sc)
+
+#     # Étape 3 : re-fetch pour avoir l'user avec le nouveau rôle + données complètes
+#     sc2, user_response2 = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+#     if sc2 == 200:
+#         user_data_updated = _deserialize_user(user_response2.get('user', {}))
+#         full_user = _build_full_user(user_data_updated, token)
+#     else:
+#         # fallback : mise à jour manuelle dans le dict existant
+#         user_data.update({
+#             "role":                  role,
+#             "role_display":          ROLE_DISPLAY.get(role, role),
+#             "direction_centrale_id": role_payload["direction_centrale_id"],
+#             "direction_id":          role_payload["direction_id"],
+#             "activite_id":           role_payload["activite_id"],
+#             "structure_id":          role_payload["structure_id"],
+#         })
+#         full_user = _build_full_user(user_data, token)
+
+#     admin_name = getattr(admin, 'nom_complet', None) or f"{getattr(admin, 'prenom', '')} {getattr(admin, 'nom', '')}".strip() or str(admin)
+
+#     return Response({
+#         "status": "success",
+#         "code":   "ROLE_ASSIGNED",
+#         "message": f"Rôle '{ROLE_DISPLAY.get(role, role)}' affecté à {full_user['nom_complet']}.",
+#         "data": {
+#             **full_user,
+#             "previous_role":         previous_role,
+#             "previous_role_display": ROLE_DISPLAY.get(previous_role, previous_role) if previous_role else None,
+#             "assigned_by": {
+#                 "id":   admin.id,
+#                 "name": admin_name,
+#                 "role": getattr(admin, 'role', 'unknown'),
+#             },
+#             "timestamp": datetime.now().isoformat(),
+#         },
+#         "metadata": {
+#             "source":           "gateway" if force_gateway else "eureka",
+#             "discovery_method": "gateway_forced" if force_gateway else "eureka",
+#             "service":          "affectation-service",
+#             "version":          "1.0.0",
+#         },
+#     }, status=200)
+import logging
+from datetime import datetime
+
+logger = logging.getLogger(__name__)
+
+
 @api_view(['POST'])
 @authentication_classes([RemoteJWTAuthentication])
 @permission_classes([IsAdmin])
 def assign_role(request):
     """POST /affectation/assign-role/"""
+
+    logger.info("========== START assign_role ==========")
+
     force_gateway = request.query_params.get('force_gateway', '').lower() == 'true'
-    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    auth_header = request.headers.get('Authorization', '')
+    logger.debug(f"Authorization header exists: {bool(auth_header)}")
+
+    try:
+        token = auth_header.split(' ', 1)[1].strip()
+    except Exception as e:
+        logger.error(f"Erreur extraction token: {str(e)}")
+        return Response({
+            "status": "error",
+            "code": "INVALID_TOKEN",
+            "message": "Token invalide."
+        }, status=401)
+
     admin = request.user
 
+    logger.info(f"Admin connecté: id={getattr(admin, 'id', None)} role={getattr(admin, 'role', None)}")
+
+    logger.debug(f"Request data: {request.data}")
+
     user_id = request.data.get('user_id')
-    role    = request.data.get('role')
+    role = request.data.get('role')
+
+    # Champs spécifiques selon le rôle
+    direction_centrale_id = request.data.get('direction_centrale_id')
+    direction_id = request.data.get('direction_id')
+    activite_id = request.data.get('activite_id')
+    structure_id = request.data.get('structure_id')
+
+    logger.debug(
+        f"""
+        user_id={user_id}
+        role={role}
+        direction_centrale_id={direction_centrale_id}
+        direction_id={direction_id}
+        activite_id={activite_id}
+        structure_id={structure_id}
+        """
+    )
 
     if not user_id:
-        return Response({"status": "error", "code": "MISSING_USER_ID", "message": "user_id est obligatoire."}, status=400)
+        logger.warning("user_id manquant")
+        return Response({
+            "status": "error",
+            "code": "MISSING_USER_ID",
+            "message": "user_id est obligatoire."
+        }, status=400)
+
     if not role:
-        return Response({"status": "error", "code": "MISSING_ROLE", "message": "role est obligatoire."}, status=400)
+        logger.warning("role manquant")
+        return Response({
+            "status": "error",
+            "code": "MISSING_ROLE",
+            "message": "role est obligatoire."
+        }, status=400)
+
     if role not in VALID_ROLES:
-        return Response({"status": "error", "code": "INVALID_ROLE", "message": f"Rôle '{role}' invalide.", "valid_roles": VALID_ROLES}, status=400)
+        logger.warning(f"Rôle invalide: {role}")
+        return Response({
+            "status": "error",
+            "code": "INVALID_ROLE",
+            "message": f"Rôle '{role}' invalide.",
+            "valid_roles": VALID_ROLES
+        }, status=400)
+
+    # ─── Validation des champs requis selon le rôle ───────────────────────────
+    ROLE_REQUIRED_FIELDS = {
+        'assistant_directeur_centrale': ('direction_centrale_id', direction_centrale_id),
+        'responsable_departement': ('direction_id', direction_id),
+        'responsable_departement_division': ('direction_id', direction_id),
+        'directeur_direction_activite': ('activite_id', activite_id),
+        'directeur_division_activite': ('structure_id', structure_id),
+        'responsable_direction_division': ('structure_id', structure_id),
+    }
+
+    if role in ROLE_REQUIRED_FIELDS:
+        field_name, field_value = ROLE_REQUIRED_FIELDS[role]
+
+        logger.debug(f"Validation champ requis: {field_name}={field_value}")
+
+        if not field_value:
+            logger.warning(f"Champ requis manquant pour rôle {role}: {field_name}")
+
+            return Response({
+                "status": "error",
+                "code": f"MISSING_{field_name.upper()}",
+                "message": f"'{field_name}' est obligatoire pour le rôle '{role}'.",
+                "required_fields": ["user_id", "role", field_name],
+            }, status=400)
+
+    # ──────────────────────────────────────────────────────────────────────────
 
     # Étape 1 : récupérer l'user
-    sc, user_response = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+    logger.info(f"Récupération utilisateur {user_id}")
+
+    sc, user_response = _call_auth(
+        'get',
+        f'/auth/users/{user_id}/',
+        token,
+        use_gateway=force_gateway
+    )
+
+    logger.debug(f"Réponse auth GET user: status={sc}")
+    logger.debug(f"user_response={user_response}")
+
     if sc == 503:
+        logger.error("Service Auth indisponible")
         return Response(user_response, status=503)
+
     if sc == 404:
-        return Response({"status": "error", "code": "USER_NOT_FOUND", "message": f"Utilisateur {user_id} introuvable."}, status=404)
+        logger.warning(f"Utilisateur {user_id} introuvable")
+        return Response({
+            "status": "error",
+            "code": "USER_NOT_FOUND",
+            "message": f"Utilisateur {user_id} introuvable."
+        }, status=404)
+
     if sc != 200:
-        return Response({"status": "error", "code": "AUTH_SERVICE_ERROR", "message": f"Service Auth a retourné {sc}.", "detail": user_response}, status=sc)
+        logger.error(f"Erreur Auth service: {sc}")
+        return Response({
+            "status": "error",
+            "code": "AUTH_SERVICE_ERROR",
+            "message": f"Service Auth a retourné {sc}.",
+            "detail": user_response
+        }, status=sc)
+
+    logger.debug("Désérialisation utilisateur")
 
     user_data = _deserialize_user(user_response.get('user', {}))
 
+    logger.debug(f"user_data désérialisé: {user_data}")
+
     if not user_data:
-        return Response({"status": "error", "code": "INVALID_RESPONSE", "message": "Structure de réponse invalide du service Auth."}, status=500)
+        logger.error("Structure réponse auth invalide")
+        return Response({
+            "status": "error",
+            "code": "INVALID_RESPONSE",
+            "message": "Structure de réponse invalide du service Auth."
+        }, status=500)
+
     if user_data['role'] == 'admin':
-        return Response({"status": "error", "code": "CANNOT_MODIFY_ADMIN", "message": "Impossible de modifier le rôle d'un administrateur."}, status=400)
+        logger.warning("Tentative modification rôle admin")
+        return Response({
+            "status": "error",
+            "code": "CANNOT_MODIFY_ADMIN",
+            "message": "Impossible de modifier le rôle d'un administrateur."
+        }, status=400)
 
     previous_role = user_data['role']
 
-    # Étape 2 : mettre à jour le rôle
-    sc, updated = _call_auth('patch', f'/auth/users/{user_id}/update-role/', token, json={"role": role}, use_gateway=force_gateway)
-    if sc == 503:
-        return Response(updated, status=503)
-    if sc not in (200, 201):
-        return Response({"status": "error", "code": "UPDATE_FAILED", "message": f"Impossible de mettre à jour le rôle (status {sc}).", "detail": updated}, status=sc)
+    logger.info(f"Ancien rôle utilisateur: {previous_role}")
 
-    # Étape 3 : re-fetch pour avoir l'user avec le nouveau rôle + données juridiques
-    sc2, user_response2 = _call_auth('get', f'/auth/users/{user_id}/', token, use_gateway=force_gateway)
+    # ─── Construire le payload ────────────────────────────────────────────────
+    role_payload = {
+        "role": role,
+        "direction_centrale_id":
+            direction_centrale_id
+            if role == 'assistant_directeur_centrale'
+            else None,
+
+        "direction_id":
+            direction_id
+            if role in (
+                'responsable_departement',
+                'responsable_departement_division'
+            )
+            else None,
+
+        "activite_id":
+            activite_id
+            if role == 'directeur_direction_activite'
+            else None,
+
+        "structure_id":
+            structure_id
+            if role in (
+                'directeur_division_activite',
+                'responsable_direction_division'
+            )
+            else None,
+    }
+
+    logger.debug(f"Payload update role: {role_payload}")
+
+    # Étape 2 : mettre à jour le rôle
+    logger.info(f"Update rôle utilisateur {user_id}")
+
+    sc, updated = _call_auth(
+        'patch',
+        f'/auth/users/{user_id}/update-role/',
+        token,
+        json=role_payload,
+        use_gateway=force_gateway
+    )
+
+    logger.debug(f"Réponse update-role status={sc}")
+    logger.debug(f"updated={updated}")
+
+    if sc == 503:
+        logger.error("Service Auth indisponible pendant update")
+        return Response(updated, status=503)
+
+    if sc not in (200, 201):
+        logger.error(f"Échec update rôle status={sc}")
+
+        return Response({
+            "status": "error",
+            "code": "UPDATE_FAILED",
+            "message": f"Impossible de mettre à jour le rôle (status {sc}).",
+            "detail": updated
+        }, status=sc)
+
+    logger.info("Rôle mis à jour avec succès")
+
+    # Étape 3 : re-fetch user
+    logger.info(f"Re-fetch utilisateur {user_id}")
+
+    sc2, user_response2 = _call_auth(
+        'get',
+        f'/auth/users/{user_id}/',
+        token,
+        use_gateway=force_gateway
+    )
+
+    logger.debug(f"Re-fetch status={sc2}")
+    logger.debug(f"user_response2={user_response2}")
+
     if sc2 == 200:
+        logger.info("Construction full_user depuis re-fetch")
+
         user_data_updated = _deserialize_user(user_response2.get('user', {}))
+
+        logger.debug(f"user_data_updated={user_data_updated}")
+
         full_user = _build_full_user(user_data_updated, token)
+
     else:
-        # fallback : on met à jour manuellement le rôle dans le dict existant
-        user_data['role'] = role
-        user_data['role_display'] = ROLE_DISPLAY.get(role, role)
+        logger.warning("Fallback construction full_user")
+
+        user_data.update({
+            "role": role,
+            "role_display": ROLE_DISPLAY.get(role, role),
+            "direction_centrale_id": role_payload["direction_centrale_id"],
+            "direction_id": role_payload["direction_id"],
+            "activite_id": role_payload["activite_id"],
+            "structure_id": role_payload["structure_id"],
+        })
+
         full_user = _build_full_user(user_data, token)
 
-    admin_name = getattr(admin, 'nom_complet', None) or f"{getattr(admin, 'prenom', '')} {getattr(admin, 'nom', '')}".strip() or str(admin)
+    logger.debug(f"full_user={full_user}")
+
+    admin_name = (
+        getattr(admin, 'nom_complet', None)
+        or f"{getattr(admin, 'prenom', '')} {getattr(admin, 'nom', '')}".strip()
+        or str(admin)
+    )
+
+    logger.info(
+        f"Rôle '{role}' affecté avec succès à user_id={user_id} par admin={admin_name}"
+    )
+
+    logger.info("========== END assign_role SUCCESS ==========")
 
     return Response({
         "status": "success",
@@ -2941,24 +3438,27 @@ def assign_role(request):
         "message": f"Rôle '{ROLE_DISPLAY.get(role, role)}' affecté à {full_user['nom_complet']}.",
         "data": {
             **full_user,
-            "previous_role":         previous_role,
-            "previous_role_display": ROLE_DISPLAY.get(previous_role, previous_role) if previous_role else None,
+            "previous_role": previous_role,
+            "previous_role_display": ROLE_DISPLAY.get(previous_role, previous_role)
+            if previous_role else None,
+
             "assigned_by": {
-                "id":   admin.id,
+                "id": admin.id,
                 "name": admin_name,
                 "role": getattr(admin, 'role', 'unknown'),
             },
+
             "timestamp": datetime.now().isoformat(),
         },
+
         "metadata": {
-            "source":           "gateway" if force_gateway else "eureka",
+            "source": "gateway" if force_gateway else "eureka",
             "discovery_method": "gateway_forced" if force_gateway else "eureka",
-            "service":          "affectation-service",
-            "version":          "1.0.0",
+            "service": "affectation-service",
+            "version": "1.0.0",
         },
+
     }, status=200)
-
-
 # ──────────────────────────────────────────────────────────────────────────────
 # VIEW : GET USER
 # ──────────────────────────────────────────────────────────────────────────────
@@ -10235,4 +10735,336 @@ def api_list_all_responsables_departement_division(request):
         },
         "data": data,
         "timestamp": datetime.now().isoformat(),
+    })
+# ──────────────────────────────────────────────────────────────────────────────
+# GET USERS PAR CHAMP ORGANISATIONNEL
+# ──────────────────────────────────────────────────────────────────────────────
+from rest_framework.permissions import IsAuthenticated
+def _filter_users_by_field(users_raw: list, role: str, field: str, field_id: str) -> list:
+    """Helper : filtre les users par rôle et valeur d'un champ organisationnel."""
+    return [
+        u for u in users_raw
+        if isinstance(u, dict)
+        and u.get('role') == role
+        and str(u.get(field, '') or '') == str(field_id)
+    ]
+
+
+# ── responsable_departement par direction_id ──────────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_responsables_by_direction(request, direction_id):
+    """
+    GET /affectation/directions/<direction_id>/responsables-departement/
+    Tous les responsable_departement affectés à cette direction.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='responsable_departement',
+        field='direction_id',
+        field_id=direction_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"direction_id": direction_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── responsable_departement par departement_id ────────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_responsables_by_departement(request, departement_id):
+    """
+    GET /affectation/departements/<departement_id>/responsables-departement/
+    Le responsable_departement affecté à ce département précis.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='responsable_departement',
+        field='departement_id',
+        field_id=departement_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"departement_id": departement_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── directeur_direction par activite_id ──────────────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_directeurs_direction_by_activite(request, activite_id):
+    """
+    GET /affectation/activites/<activite_id>/directeurs-direction/
+    Tous les directeur_direction affectés à cette activité.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='directeur_direction',
+        field='activite_id',
+        field_id=activite_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"activite_id": activite_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── assistant_directeur_centrale par direction_centrale_id ───────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_assistants_by_direction_centrale(request, direction_centrale_id):
+    """
+    GET /affectation/directions-centrales/<direction_centrale_id>/assistants/
+    Tous les assistant_directeur_centrale de cette direction centrale.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='assistant_directeur_centrale',
+        field='direction_centrale_id',
+        field_id=direction_centrale_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"direction_centrale_id": direction_centrale_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── directeur_direction_activite par activite_id ─────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_directeurs_direction_activite_by_activite(request, activite_id):
+    """
+    GET /affectation/activites/<activite_id>/directeurs-direction-activite/
+    Tous les directeur_direction_activite de cette activité.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='directeur_direction_activite',
+        field='activite_id',
+        field_id=activite_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"activite_id": activite_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── directeur_division_activite par structure_id ─────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_directeurs_division_activite_by_structure(request, structure_id):
+    """
+    GET /affectation/structures/<structure_id>/directeurs-division-activite/
+    Tous les directeur_division_activite affectés à cette structure.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='directeur_division_activite',
+        field='structure_id',
+        field_id=structure_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"structure_id": structure_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── responsable_direction_division par structure_id ──────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_responsables_direction_division_by_structure(request, structure_id):
+    """
+    GET /affectation/structures/<structure_id>/responsables-direction-division/
+    Tous les responsable_direction_division de cette structure.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='responsable_direction_division',
+        field='structure_id',
+        field_id=structure_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"structure_id": structure_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── responsable_departement_division par structure_id ────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_responsables_departement_division_by_structure(request, structure_id):
+    """
+    GET /affectation/structures/<structure_id>/responsables-departement-division/
+    Tous les responsable_departement_division de cette structure.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='responsable_departement_division',
+        field='structure_id',
+        field_id=structure_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"structure_id": structure_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── vice_presedent par activite_id ───────────────────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_vice_presidents_by_activite(request, activite_id):
+    """
+    GET /affectation/activites/<activite_id>/vice-presidents/
+    Le vice_presedent affecté à cette activité.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='vice_presedent',
+        field='activite_id',
+        field_id=activite_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"activite_id": activite_id},
+        "count": len(data),
+        "data": data,
+    })
+
+
+# ── directeur_centrale par direction_centrale_id ─────────────────────────────
+
+@api_view(['GET'])
+@authentication_classes([RemoteJWTAuthentication])
+@permission_classes([IsAuthenticated])
+def api_list_directeurs_centrale_by_direction_centrale(request, direction_centrale_id):
+    """
+    GET /affectation/directions-centrales/<direction_centrale_id>/directeurs-centrale/
+    Le directeur_centrale affecté à cette direction centrale.
+    """
+    token = request.headers.get('Authorization', '').split(' ', 1)[1].strip()
+
+    sc, resp = _call_auth('get', '/auth/users/', token)
+    if sc != 200:
+        return Response({"status": "error", "message": "Service Auth indisponible"}, status=503)
+
+    cibles = _filter_users_by_field(
+        resp.get('users', []),
+        role='directeur_centrale',
+        field='direction_centrale_id',
+        field_id=direction_centrale_id,
+    )
+    data = _build_full_users(cibles, token)
+
+    return Response({
+        "status": "success",
+        "filter": {"direction_centrale_id": direction_centrale_id},
+        "count": len(data),
+        "data": data,
     })
