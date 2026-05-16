@@ -2312,28 +2312,28 @@ def _call_juridique(method: str, path: str, token: str, **kwargs):
 #     }
 
 
-# def _deserialize_user(user_dict: dict) -> dict:
-#     s = UserDetailSerializer(data=user_dict)
-#     if s.is_valid():
-#         return dict(s.data)
-#     print(f'[AFFECTATION] ⚠️ UserDetailSerializer errors: {s.errors}')
-#     return _normalize_user(user_dict)
+def _deserialize_user(user_dict: dict) -> dict:
+    s = UserDetailSerializer(data=user_dict)
+    if s.is_valid():
+        return dict(s.data)
+    print(f'[AFFECTATION] ⚠️ UserDetailSerializer errors: {s.errors}')
+    return _normalize_user(user_dict)
 
 
 
-# def _deserialize_users(users_list: list) -> list:
-#     """
-#     Clean passthrough safe:
-#     - ne modifie aucun champ
-#     - garantit seulement dict valide
-#     """
-#     if not isinstance(users_list, list):
-#         return []
+def _deserialize_users(users_list: list) -> list:
+    """
+    Clean passthrough safe:
+    - ne modifie aucun champ
+    - garantit seulement dict valide
+    """
+    if not isinstance(users_list, list):
+        return []
 
-#     return [
-#         u for u in users_list
-#         if isinstance(u, dict)
-#     ]
+    return [
+        u for u in users_list
+        if isinstance(u, dict)
+    ]
 
 # # ──────────────────────────────────────────────────────────────────────────────
 # # HELPER UNIVERSEL : enrichit UN user avec TOUTES ses données juridiques
@@ -3806,7 +3806,7 @@ def assign_direction_to_user(request):
 
         sc_ex, ex_resp = _call_juridique(
             'get',
-            f'/juridique/directions/{user_data['direction_id']}/',
+            f'/juridique/directions/{user_data["direction_id"]}/',
             token
         )
 
