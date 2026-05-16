@@ -125,14 +125,24 @@ WSGI_APPLICATION = 'affectation_service.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 # database de khalida
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'affectation_sounatrach',
+#         'USER': 'root',  # Ou un autre utilisateur
+#         'PASSWORD': 'root',
+#         'HOST': 'localhost',
+#         'PORT': '3307',  # Port par défaut de MySQL
+#     }
+# }
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'affectation_sounatrach',
+        'NAME': 'affectation-sonatrach',
         'USER': 'root',  # Ou un autre utilisateur
         'PASSWORD': 'root',
         'HOST': 'localhost',
-        'PORT': '3307',  # Port par défaut de MySQL
+        'PORT': '3306',  # Port par défaut de MySQL
     }
 }
 
