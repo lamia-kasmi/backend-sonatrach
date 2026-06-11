@@ -3200,6 +3200,7 @@ def assign_role(request):
     direction_id = request.data.get('direction_id')
     activite_id = request.data.get('activite_id')
     structure_id = request.data.get('structure_id')
+    division_activite_id = request.data.get('division_activite_id')
 
     logger.debug(
         f"""
@@ -3209,6 +3210,8 @@ def assign_role(request):
         direction_id={direction_id}
         activite_id={activite_id}
         structure_id={structure_id}
+        division_activite_id={division_activite_id}
+
         """
     )
 
@@ -3241,10 +3244,10 @@ def assign_role(request):
     ROLE_REQUIRED_FIELDS = {
         'assistant_directeur_centrale': ('direction_centrale_id', direction_centrale_id),
         'responsable_departement': ('direction_id', direction_id),
-        'responsable_departement_division': ('direction_id', direction_id),
+        'responsable_departement_division': ('division_activite_id',division_activite_id),
         'directeur_direction_activite': ('activite_id', activite_id),
-        'directeur_division_activite': ('structure_id', structure_id),
-        'responsable_direction_division': ('structure_id', structure_id),
+        'directeur_division_activite': ('activite_id', activite_id),
+        'responsable_direction_division': ('division_activite_id',division_activite_id),
     }
 
     if role in ROLE_REQUIRED_FIELDS:
@@ -3336,20 +3339,30 @@ def assign_role(request):
             direction_id
             if role in (
                 'responsable_departement',
-                'responsable_departement_division'
+                
             )
             else None,
 
         "activite_id":
             activite_id
-            if role == 'directeur_direction_activite'
-            else None,
-
-        "structure_id":
-            structure_id
+            
             if role in (
+                
                 'directeur_division_activite',
-                'responsable_direction_division'
+                'directeur_direction_activite',
+                'responsable_direction_division',     
+                'responsable_departement_division'  
+            )
+            else None,
+            
+            
+
+        "division_activite_id":
+            division_activite_id
+            if role in (
+                
+                'responsable_direction_division',
+                'responsable_departement_division'
             )
             else None,
     }
