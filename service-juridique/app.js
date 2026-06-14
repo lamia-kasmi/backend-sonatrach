@@ -14,7 +14,6 @@ const departemet_activiteRoute= require('./routes/departementActiviteRoutes');
 
 
 
-
 const app = express();
 
 app.use(cors());
@@ -24,6 +23,8 @@ app.use(morgan('dev'));
 app.get('/health', (req, res) => res.json({ status: 'UP', service: 'service-juridique' }));
 app.get('/info',   (req, res) => res.json({ app: 'service-juridique' }));
 
+app.use('/notifications/risk-alerts', riskAlertRoutes);
+
 app.use('/juridique/directions',   directionRoutes);
 app.use('/juridique/departements', departementRoutes);
 app.use('/juridique/activites', activiteRoutes);
@@ -31,7 +32,7 @@ app.use('/juridique/directions-centrales',directions_centrales)
 app.use('/juridique/structure',   structureRoute);
 app.use('/juridique/division', divisionRoute);
 app.use('/juridique/direction_activite', direction_activiteRoutes);
-app.use('/juridique/departemet_activite',departemet_activiteRoute)
+app.use('/juridique/departemet_activite',departemet_activiteRoute)// role nesxiste pas
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: `Route ${req.originalUrl} non trouvée` });
