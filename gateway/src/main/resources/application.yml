@@ -49,6 +49,18 @@ spring:
             - Path=/affectation/**
           filters:
             - StripPrefix=0
+        - id: clm-sounatrach
+          uri: http://localhost:8012
+          predicates:
+            - Path=/clm/**
+          filters:
+            - StripPrefix=0
+        - id: service-notification
+          uri: lb://SERVICE-NOTIFICATION
+          predicates:
+           - Path=/notifications/**
+          filters:
+          - StripPrefix=0
 
 
 eureka:
